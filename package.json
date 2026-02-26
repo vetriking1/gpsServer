@@ -1,0 +1,24 @@
+{
+  "name": "gps-tracker-server",
+  "version": "1.0.0",
+  "description": "GPS Tracker Server with SQLite Database",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test_server.js",
+    "prod": "pm2 start server.js --name gps-tracker",
+    "stop": "pm2 stop gps-tracker",
+    "restart": "pm2 restart gps-tracker",
+    "logs": "pm2 logs gps-tracker",
+    "status": "pm2 status"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0"
+  },
+  "devDependencies": {
+    "pm2": "^5.3.0"
+  },
+  "keywords": ["gps", "tracker", "gt06", "rv08"],
+  "author": "",
+  "license": "ISC"
+}
