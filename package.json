@@ -1,11 +1,12 @@
 {
   "name": "gps-tracker-server",
   "version": "1.0.0",
-  "description": "GPS Tracker Server with SQLite Database",
+  "description": "GPS Tracker Server with PostgreSQL + PostGIS + TimescaleDB",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "test": "node test_server.js",
+    "setup-db": "psql -U gps_user -d gps_tracker -f schema.sql",
     "prod": "pm2 start server.js --name gps-tracker",
     "stop": "pm2 stop gps-tracker",
     "restart": "pm2 restart gps-tracker",
@@ -13,7 +14,11 @@
     "status": "pm2 status"
   },
   "dependencies": {
-    "better-sqlite3": "^11.0.0"
+    "pg": "^8.11.3",
+    "dotenv": "^16.4.5",
+    "ws": "^8.16.0",
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
   },
   "devDependencies": {
     "pm2": "^5.3.0"
@@ -22,3 +27,4 @@
   "author": "",
   "license": "ISC"
 }
+

@@ -74,7 +74,7 @@ function processRawData(hex) {
 }
 
 // --- TEST CASE 1: Fuel/Analog Packet ---
-const fuelHex = "787807940AF00077AFF90D0A";
+const fuelHex = "78780794000002c55a4a0d0a";
 console.log("Fuel Result:", processRawData(fuelHex));
 
 // --- TEST CASE 2: Location Packet ---
