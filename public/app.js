@@ -1,12 +1,6 @@
-// Configuration
-// Works with both direct access (localhost:3000) and Nginx proxy (/gps)
-const WS_URL = window.location.pathname.startsWith('/gps')
-    ? `ws://${window.location.host}/gps`
-    : `ws://${window.location.hostname}:3000`;
+const WS_URL =  `ws://${window.location.hostname}/gps`
 
-const API_URL = window.location.pathname.startsWith('/gps')
-    ? `${window.location.protocol}//${window.location.host}/api/gps`
-    : `http://${window.location.hostname}:3000/api`;
+const API_URL = `http://${window.location.hostname}/api/gps`
 
 // State
 let ws = null;
