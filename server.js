@@ -371,7 +371,7 @@ app.use(cors());
 app.use(express.json());
 
 // Base path for all routes
-const BASE_PATH = process.env.BASE_PATH || '/gps';
+const BASE_PATH = process.env.BASE_PATH || '';
 
 // Serve static files at base path
 app.use(BASE_PATH, express.static('public'));
@@ -409,8 +409,8 @@ app.get(`${BASE_PATH}/api/health`, (req, res) => {
 const API_PORT = process.env.API_PORT || 3000;
 const apiServer = app.listen(API_PORT, () => {
     log(`API Server listening on port ${API_PORT}`, 'SERVER');
-    log(`Base URL: http://31.97.229.169${BASE_PATH}/api`, 'SERVER');
-    log(`WebSocket URL: ws://31.97.229.169${BASE_PATH}`, 'SERVER');
+    log(`Public API URL: http://31.97.229.169/api/gps`, 'SERVER');
+    log(`Public WebSocket URL: ws://31.97.229.169/gps`, 'SERVER');
 });
 
 // ============================================

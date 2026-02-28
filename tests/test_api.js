@@ -1,7 +1,7 @@
 // API Test Script
 // Run with: node test_api.js
 
-const BASE_URL = 'http://31.97.229.169/gps/api';
+const BASE_URL = 'http://31.97.229.169/api/gps';
 
 async function testAPI() {
     console.log('🧪 Testing GPS Tracker API...\n');
@@ -105,7 +105,7 @@ async function testAPI() {
         
     } catch (error) {
         console.error('❌ Error:', error.message);
-        console.log('\n⚠️  Make sure the server is running and accessible at http://31.97.229.169/gps');
+        console.log('\n⚠️  Make sure the server is running and accessible at http://31.97.229.169/api/gps');
     }
 }
 

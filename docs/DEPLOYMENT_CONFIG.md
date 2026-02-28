@@ -4,7 +4,7 @@
 
 ### Base API URL
 ```
-http://31.97.229.169/gps/api
+http://31.97.229.169/api/gps
 ```
 
 ### WebSocket URL
@@ -33,7 +33,7 @@ DB_PASSWORD=your_password
 GPS_SERVER_PORT=5050
 GPS_SERVER_HOST=0.0.0.0
 API_PORT=3000
-BASE_PATH=/gps
+BASE_PATH=
 
 # Logging
 LOG_FILE=server.log
@@ -42,80 +42,93 @@ LOG_LEVEL=INFO
 
 ## Nginx/Reverse Proxy Configuration
 
-Since you're using a `/gps` path, you likely have nginx or another reverse proxy. Here's a sample nginx config:
+Your nginx configuration rewrites `/api/gps` to `/api` for the Express app:
 
 ```nginx
+upstream gps_dashboard {
+    server localhost:3000;
+}
+
 server {
     listen 80;
     server_name 31.97.229.169;
 
-    # API and static files
-    location /gps {
-        proxy_pass http://localhost:3000/gps;
+    # API endpoints - rewrites /api/gps/* to /api/*
+    location /api/gps {
+        rewrite ^/api/gps(/.*)$ /api$1 break;
+        proxy_pass http://gps_dashboard;
         proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto http;
+        
+        add_header X-Content-Type-Options nosniff;
+        add_header X-Frame-Options DENY;
+        add_header X-XSS-Protection "1; mode=block";
     }
 
-    # WebSocket specific configuration
+    # WebSocket and static files
     location /gps/ {
-        proxy_pass http://localhost:3000/gps/;
+        proxy_pass http://gps_dashboard/;
         proxy_http_version 1.1;
+        
+        # WebSocket support
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_read_timeout 86400;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Timeouts for WebSocket
+        proxy_connect_timeout 7d;
+        proxy_send_timeout 7d;
+        proxy_read_timeout 7d;
     }
 }
 ```
 
 ## API Endpoints
 
-All endpoints are prefixed with `/gps/api`:
+All endpoints are prefixed with `/api/gps`:
 
 ### Vehicles
-- `GET http://31.97.229.169/gps/api/vehicles`
-- `GET http://31.97.229.169/gps/api/vehicles/:id`
-- `PUT http://31.97.229.169/gps/api/vehicles/:id`
-- `PUT http://31.97.229.169/gps/api/vehicles/:id/imei`
-- `DELETE http://31.97.229.169/gps/api/vehicles/:id`
+- `GET http://31.97.229.169/api/gps/vehicles`
+- `GET http://31.97.229.169/api/gps/vehicles/:id`
+- `PUT http://31.97.229.169/api/gps/vehicles/:id`
+- `PUT http://31.97.229.169/api/gps/vehicles/:id/imei`
+- `DELETE http://31.97.229.169/api/gps/vehicles/:id`
 
 ### Locations
-- `GET http://31.97.229.169/gps/api/locations/live`
-- `GET http://31.97.229.169/gps/api/locations/at-time`
-- `GET http://31.97.229.169/gps/api/locations/history/:id`
-- `GET http://31.97.229.169/gps/api/locations/route/:id`
+- `GET http://31.97.229.169/api/gps/locations/live`
+- `GET http://31.97.229.169/api/gps/locations/at-time`
+- `GET http://31.97.229.169/api/gps/locations/history/:id`
+- `GET http://31.97.229.169/api/gps/locations/route/:id`
 
 ### Fuel
-- `GET http://31.97.229.169/gps/api/fuel/live`
-- `GET http://31.97.229.169/gps/api/fuel/history/:id`
-- `GET http://31.97.229.169/gps/api/fuel/consumption/:id`
+- `GET http://31.97.229.169/api/gps/fuel/live`
+- `GET http://31.97.229.169/api/gps/fuel/history/:id`
+- `GET http://31.97.229.169/api/gps/fuel/consumption/:id`
 
 ### Geofences
-- `GET http://31.97.229.169/gps/api/geofences`
-- `POST http://31.97.229.169/gps/api/geofences`
-- `PUT http://31.97.229.169/gps/api/geofences/:id`
-- `DELETE http://31.97.229.169/gps/api/geofences/:id`
-- `GET http://31.97.229.169/gps/api/geofences/:id/events`
-- `GET http://31.97.229.169/gps/api/geofences/:id/stats`
+- `GET http://31.97.229.169/api/gps/geofences`
+- `POST http://31.97.229.169/api/gps/geofences`
+- `PUT http://31.97.229.169/api/gps/geofences/:id`
+- `DELETE http://31.97.229.169/api/gps/geofences/:id`
+- `GET http://31.97.229.169/api/gps/geofences/:id/events`
+- `GET http://31.97.229.169/api/gps/geofences/:id/stats`
 
 ### Analytics
-- `GET http://31.97.229.169/gps/api/analytics/dashboard`
-- `GET http://31.97.229.169/gps/api/analytics/vehicle-activity`
-- `GET http://31.97.229.169/gps/api/analytics/distance/:id`
-- `GET http://31.97.229.169/gps/api/analytics/hourly/:id`
-- `GET http://31.97.229.169/gps/api/analytics/geofence-summary`
-- `GET http://31.97.229.169/gps/api/analytics/speed-violations`
+- `GET http://31.97.229.169/api/gps/analytics/dashboard`
+- `GET http://31.97.229.169/api/gps/analytics/vehicle-activity`
+- `GET http://31.97.229.169/api/gps/analytics/distance/:id`
+- `GET http://31.97.229.169/api/gps/analytics/hourly/:id`
+- `GET http://31.97.229.169/api/gps/analytics/geofence-summary`
+- `GET http://31.97.229.169/api/gps/analytics/speed-violations`
 
 ### Health Check
-- `GET http://31.97.229.169/gps/api/health`
+- `GET http://31.97.229.169/api/gps/health`
 
 ## WebSocket Connection
 
@@ -217,7 +230,7 @@ function useGPSWebSocket() {
 
 ### 1. Test Health Endpoint
 ```bash
-curl http://31.97.229.169/gps/api/health
+curl http://31.97.229.169/api/gps/health
 ```
 
 Expected response:
@@ -233,12 +246,12 @@ Expected response:
 
 ### 2. Test Get Vehicles
 ```bash
-curl http://31.97.229.169/gps/api/vehicles
+curl http://31.97.229.169/api/gps/vehicles
 ```
 
 ### 3. Test Live Locations
 ```bash
-curl http://31.97.229.169/gps/api/locations/live
+curl http://31.97.229.169/api/gps/locations/live
 ```
 
 ### 4. Test WebSocket (using wscat)
@@ -341,12 +354,12 @@ tail -f server.log
 
 ### WebSocket not connecting
 1. Check nginx WebSocket configuration
-2. Verify BASE_PATH in .env is `/gps`
-3. Test direct connection: `wscat -c ws://localhost:3000/gps`
+2. Verify BASE_PATH in .env is empty (or not set)
+3. Test direct connection: `wscat -c ws://localhost:3000/`
 
 ### API returns 404
-1. Verify BASE_PATH is set correctly
-2. Check nginx proxy_pass configuration
+1. Verify BASE_PATH is empty in .env
+2. Check nginx rewrite rule: `/api/gps` → `/api`
 3. Restart server: `pm2 restart gps-tracker`
 
 ### No live updates
@@ -356,8 +369,8 @@ tail -f server.log
 
 ## Production Checklist
 
-- [x] BASE_PATH set to `/gps` in .env
-- [ ] Nginx configured for reverse proxy
+- [x] BASE_PATH set to empty in .env (or removed)
+- [x] Nginx configured with rewrite rule
 - [ ] Firewall rules configured
 - [ ] SSL certificate installed (recommended)
 - [ ] PM2 configured for auto-restart
@@ -369,8 +382,8 @@ tail -f server.log
 
 ## Next Steps
 
-1. Update your `.env` file with `BASE_PATH=/gps`
+1. Update your `.env` file: Remove `BASE_PATH` or set it to empty string
 2. Restart the server: `pm2 restart gps-tracker`
-3. Test the health endpoint
-4. Connect your frontend to the WebSocket
+3. Test the health endpoint: `curl http://31.97.229.169/api/gps/health`
+4. Connect your frontend to the WebSocket: `ws://31.97.229.169/gps`
 5. Configure GPS devices to connect to 31.97.229.169:5050

@@ -1,6 +1,6 @@
 # GPS Tracker API Documentation
 
-Base URL: `http://31.97.229.169/gps`
+Base URL: `http://31.97.229.169/api/gps`
 
 ## Table of Contents
 1. [Vehicles](#vehicles)
@@ -15,7 +15,7 @@ Base URL: `http://31.97.229.169/gps`
 
 ### Get All Vehicles
 ```
-GET /api/vehicles
+GET /vehicles
 ```
 Returns all vehicles with their last known location.
 
@@ -41,12 +41,12 @@ Returns all vehicles with their last known location.
 
 ### Get Vehicle by ID
 ```
-GET /api/vehicles/:id
+GET /vehicles/:id
 ```
 
 ### Update Vehicle Details
 ```
-PUT /api/vehicles/:id
+PUT /vehicles/:id
 ```
 
 **Request Body:**
@@ -63,7 +63,7 @@ PUT /api/vehicles/:id
 
 ### Update Vehicle IMEI
 ```
-PUT /api/vehicles/:id/imei
+PUT /vehicles/:id/imei
 ```
 
 **Request Body:**
@@ -75,7 +75,7 @@ PUT /api/vehicles/:id/imei
 
 ### Delete Vehicle
 ```
-DELETE /api/vehicles/:id
+DELETE /vehicles/:id
 ```
 
 ---
@@ -84,7 +84,7 @@ DELETE /api/vehicles/:id
 
 ### Get Live Locations
 ```
-GET /api/locations/live
+GET /locations/live
 ```
 Returns current locations of all active vehicles (from in-memory cache).
 
@@ -108,7 +108,7 @@ Returns current locations of all active vehicles (from in-memory cache).
 
 ### Get Locations at Specific Time
 ```
-GET /api/locations/at-time?timestamp=2026-02-28T10:00:00Z&vehicle_id=1
+GET /locations/at-time?timestamp=2026-02-28T10:00:00Z&vehicle_id=1
 ```
 
 **Query Parameters:**
@@ -136,7 +136,7 @@ GET /api/locations/at-time?timestamp=2026-02-28T10:00:00Z&vehicle_id=1
 
 ### Get Vehicle Location History
 ```
-GET /api/locations/history/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z&limit=1000
+GET /locations/history/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z&limit=1000
 ```
 
 **Query Parameters:**
@@ -146,7 +146,7 @@ GET /api/locations/history/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T23
 
 ### Get Vehicle Route
 ```
-GET /api/locations/route/:vehicleId?from=2026-02-28T08:00:00Z&to=2026-02-28T18:00:00Z
+GET /locations/route/:vehicleId?from=2026-02-28T08:00:00Z&to=2026-02-28T18:00:00Z
 ```
 Returns ordered location points for route visualization.
 
@@ -160,7 +160,7 @@ Returns ordered location points for route visualization.
 
 ### Get Live Fuel Levels
 ```
-GET /api/fuel/live
+GET /fuel/live
 ```
 Returns current fuel levels for all active vehicles.
 
@@ -182,12 +182,12 @@ Returns current fuel levels for all active vehicles.
 
 ### Get Fuel History
 ```
-GET /api/fuel/history/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z&limit=1000
+GET /fuel/history/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z&limit=1000
 ```
 
 ### Get Fuel Consumption Analysis
 ```
-GET /api/fuel/consumption/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
+GET /fuel/consumption/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
 ```
 
 **Response:**
@@ -207,7 +207,7 @@ GET /api/fuel/consumption/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T23:
 
 ### Get All Geofences
 ```
-GET /api/geofences?active_only=true
+GET /geofences?active_only=true
 ```
 
 **Query Parameters:**
@@ -233,12 +233,12 @@ GET /api/geofences?active_only=true
 
 ### Get Geofence by ID
 ```
-GET /api/geofences/:id
+GET /geofences/:id
 ```
 
 ### Create Geofence (Circle)
 ```
-POST /api/geofences
+POST /geofences
 ```
 
 **Request Body:**
@@ -255,7 +255,7 @@ POST /api/geofences
 
 ### Create Geofence (Polygon)
 ```
-POST /api/geofences
+POST /geofences
 ```
 
 **Request Body:**
@@ -275,7 +275,7 @@ POST /api/geofences
 
 ### Update Geofence
 ```
-PUT /api/geofences/:id
+PUT /geofences/:id
 ```
 
 **Request Body:**
@@ -289,12 +289,12 @@ PUT /api/geofences/:id
 
 ### Delete Geofence
 ```
-DELETE /api/geofences/:id
+DELETE /geofences/:id
 ```
 
 ### Get Geofence Events
 ```
-GET /api/geofences/:id/events?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z&vehicle_id=1&limit=100
+GET /geofences/:id/events?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z&vehicle_id=1&limit=100
 ```
 
 **Query Parameters:**
@@ -320,7 +320,7 @@ GET /api/geofences/:id/events?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z&
 
 ### Get Geofence Statistics
 ```
-GET /api/geofences/:id/stats?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
+GET /geofences/:id/stats?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
 ```
 
 **Response:**
@@ -344,7 +344,7 @@ GET /api/geofences/:id/stats?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
 
 ### Dashboard Overview
 ```
-GET /api/analytics/dashboard
+GET /analytics/dashboard
 ```
 
 **Response:**
@@ -359,7 +359,7 @@ GET /api/analytics/dashboard
 
 ### Vehicle Activity Summary
 ```
-GET /api/analytics/vehicle-activity?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
+GET /analytics/vehicle-activity?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
 ```
 
 **Response:**
@@ -379,7 +379,7 @@ GET /api/analytics/vehicle-activity?from=2026-02-28T00:00:00Z&to=2026-02-28T23:5
 
 ### Distance Traveled
 ```
-GET /api/analytics/distance/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
+GET /analytics/distance/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
 ```
 
 **Response:**
@@ -394,7 +394,7 @@ GET /api/analytics/distance/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T2
 
 ### Hourly Statistics
 ```
-GET /api/analytics/hourly/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
+GET /analytics/hourly/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
 ```
 
 **Response:**
@@ -413,7 +413,7 @@ GET /api/analytics/hourly/:vehicleId?from=2026-02-28T00:00:00Z&to=2026-02-28T23:
 
 ### Geofence Summary
 ```
-GET /api/analytics/geofence-summary?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
+GET /analytics/geofence-summary?from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
 ```
 
 **Response:**
@@ -432,7 +432,7 @@ GET /api/analytics/geofence-summary?from=2026-02-28T00:00:00Z&to=2026-02-28T23:5
 
 ### Speed Violations
 ```
-GET /api/analytics/speed-violations?speed_limit=80&from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
+GET /analytics/speed-violations?speed_limit=80&from=2026-02-28T00:00:00Z&to=2026-02-28T23:59:59Z
 ```
 
 **Query Parameters:**
