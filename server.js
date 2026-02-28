@@ -1,3 +1,5 @@
+// this server used for the aarov vechile management project
+
 const net = require('net');
 const express = require('express');
 const { WebSocketServer } = require('ws');
@@ -461,7 +463,7 @@ wss.on('connection', (ws, req) => {
 // START SERVERS
 // ============================================
 
-gpsServer.listen(3000, () => {
+gpsServer.listen(GPS_SERVER_PORT, GPS_SERVER_HOST, () => {
     log(`GPS Tracker Server listening on ${GPS_SERVER_HOST}:${GPS_SERVER_PORT}`, 'SERVER');
     log(`Database: ${process.env.DB_NAME}@${process.env.DB_HOST}`, 'SERVER');
     log(`Log file: ${process.env.LOG_FILE || 'server.log'}`, 'SERVER');
