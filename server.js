@@ -103,7 +103,7 @@ function getFuelLevel(voltage) {
 // Broadcast to all WebSocket clients
 function broadcastToClients(message) {
     wss.clients.forEach(client => {
-        if (client.readyState === 1) { // WebSocket.OPEN
+        if (client.readyState === 1) {
             client.send(JSON.stringify(message));
         }
     });
@@ -132,7 +132,6 @@ async function processLocationData(data, imei, vehicle) {
         const course = courseStatus & 0x03ff;
         const hex = data.toString('hex');
         
-        // Store in database
         await pool.query(
             `INSERT INTO location_data 
              (vehicle_id, imei, timestamp, location, latitude, longitude, speed, course, satellites, raw_hex)
@@ -142,7 +141,6 @@ async function processLocationData(data, imei, vehicle) {
         
         log(`Location stored: Vehicle=${vehicle.vehicle_number}, Lat=${latitude}, Lon=${longitude}, Speed=${speed}km/h`, 'DB');
         
-        // Update in-memory cache
         const locationData = {
             vehicleId: vehicle.id,
             vehicleNumber: vehicle.vehicle_number,
@@ -158,13 +156,11 @@ async function processLocationData(data, imei, vehicle) {
         
         liveLocations.set(vehicle.id, locationData);
         
-        // Broadcast to all connected WebSocket clients
         broadcastToClients({
             type: 'location_update',
             data: locationData
         });
         
-        // Check geofences (async, don't wait)
         checkGeofences(vehicle.id, latitude, longitude).catch(err => 
             log(`Geofence check error: ${err.message}`, 'ERROR')
         );
@@ -190,7 +186,6 @@ async function processFuelData(data, imei, vehicle) {
         
         log(`Fuel stored: Vehicle=${vehicle.vehicle_number}, Voltage=${voltage}V, Level=${fuelLevel}%`, 'DB');
         
-        // Broadcast fuel update
         broadcastToClients({
             type: 'fuel_update',
             data: {
@@ -225,7 +220,6 @@ async function checkGeofences(vehicleId, latitude, longitude) {
                     [vehicleId, fence.id, longitude, latitude]
                 );
                 
-                // Broadcast geofence event
                 broadcastToClients({
                     type: 'geofence_alert',
                     data: {
@@ -256,13 +250,11 @@ async function logConnection(eventType, imei, vehicleId, message) {
             [eventType, imei, vehicleId, message]
         );
         
-        // Update vehicle status
         liveVehicleStatus.set(vehicleId, {
             status: eventType === 'LOGIN' ? 'online' : eventType === 'DISCONNECT' ? 'offline' : 'online',
             lastSeen: new Date().toISOString()
         });
         
-        // Broadcast status change
         broadcastToClients({
             type: 'vehicle_status',
             data: {
@@ -375,78 +367,34 @@ const gpsServer = net.createServer((socket) => {
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
 
-// API: Get all vehicles
-app.get('/api/vehicles', async (req, res) => {
-    try {
-        const result = await pool.query(
-            'SELECT id, imei, vehicle_number, vehicle_type, driver_name, is_active FROM vehicles ORDER BY vehicle_number'
-        );
-        res.json(result.rows);
-    } catch (err) {
-        log(`API Error: ${err.message}`, 'ERROR');
-        res.status(500).json({ error: err.message });
-    }
-});
+// Base path for all routes
+const BASE_PATH = process.env.BASE_PATH || '/gps';
 
-// API: Get live locations (from cache)
-app.get('/api/locations/live', (req, res) => {
-    const locations = Array.from(liveLocations.values());
-    res.json(locations);
-});
+// Serve static files at base path
+app.use(BASE_PATH, express.static('public'));
 
-// API: Get vehicle history
-app.get('/api/vehicles/:id/history', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { from, to, limit = 1000 } = req.query;
-        
-        let query = `
-            SELECT latitude, longitude, speed, course, satellites, timestamp, received_at
-            FROM location_data
-            WHERE vehicle_id = $1
-        `;
-        const params = [id];
-        
-        if (from) {
-            params.push(from);
-            query += ` AND received_at >= $${params.length}`;
-        }
-        if (to) {
-            params.push(to);
-            query += ` AND received_at <= $${params.length}`;
-        }
-        
-        query += ` ORDER BY received_at DESC LIMIT $${params.length + 1}`;
-        params.push(limit);
-        
-        const result = await pool.query(query, params);
-        res.json(result.rows);
-    } catch (err) {
-        log(`API Error: ${err.message}`, 'ERROR');
-        res.status(500).json({ error: err.message });
-    }
-});
+// Make pool and cache available to routes
+app.locals.pool = pool;
+app.locals.liveLocations = liveLocations;
+app.locals.liveVehicleStatus = liveVehicleStatus;
 
-// API: Get geofences
-app.get('/api/geofences', async (req, res) => {
-    try {
-        const result = await pool.query(
-            `SELECT id, name, description, fence_type, center_lat, center_lon, 
-                    radius_meters, ST_AsGeoJSON(geometry) as geometry, is_active
-             FROM geofences
-             WHERE is_active = true`
-        );
-        res.json(result.rows);
-    } catch (err) {
-        log(`API Error: ${err.message}`, 'ERROR');
-        res.status(500).json({ error: err.message });
-    }
-});
+// Import routes
+const vehiclesRouter = require('./routes/vehicles');
+const locationsRouter = require('./routes/locations');
+const fuelRouter = require('./routes/fuel');
+const geofencesRouter = require('./routes/geofences');
+const analyticsRouter = require('./routes/analytics');
+
+// Use routes with base path
+app.use(`${BASE_PATH}/api/vehicles`, vehiclesRouter);
+app.use(`${BASE_PATH}/api/locations`, locationsRouter);
+app.use(`${BASE_PATH}/api/fuel`, fuelRouter);
+app.use(`${BASE_PATH}/api/geofences`, geofencesRouter);
+app.use(`${BASE_PATH}/api/analytics`, analyticsRouter);
 
 // API: Health check
-app.get('/api/health', (req, res) => {
+app.get(`${BASE_PATH}/api/health`, (req, res) => {
     res.json({
         status: 'ok',
         gpsServer: 'running',
@@ -459,19 +407,23 @@ app.get('/api/health', (req, res) => {
 const API_PORT = process.env.API_PORT || 3000;
 const apiServer = app.listen(API_PORT, () => {
     log(`API Server listening on port ${API_PORT}`, 'SERVER');
+    log(`Base URL: http://31.97.229.169${BASE_PATH}/api`, 'SERVER');
+    log(`WebSocket URL: ws://31.97.229.169${BASE_PATH}`, 'SERVER');
 });
 
 // ============================================
 // WEBSOCKET SERVER (Port 3000 - same as API)
 // ============================================
 
-const wss = new WebSocketServer({ server: apiServer });
+const wss = new WebSocketServer({ 
+    server: apiServer,
+    path: `${BASE_PATH}/`
+});
 
 wss.on('connection', (ws, req) => {
     const clientIp = req.socket.remoteAddress;
     log(`WebSocket client connected from: ${clientIp}`, 'WS');
     
-    // Send current live locations to new client
     ws.send(JSON.stringify({
         type: 'initial_data',
         data: {
@@ -488,7 +440,6 @@ wss.on('connection', (ws, req) => {
             const data = JSON.parse(message);
             log(`WebSocket message from ${clientIp}: ${data.type}`, 'WS');
             
-            // Handle client requests (e.g., subscribe to specific vehicles)
             if (data.type === 'ping') {
                 ws.send(JSON.stringify({ type: 'pong', timestamp: new Date().toISOString() }));
             }
