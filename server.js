@@ -97,7 +97,7 @@ async function getVehicleByIMEI(imei) {
 // Fuel level calculation
 function getFuelLevel(voltage) {
     const minVolts = 0;
-    const maxVolts = 10;
+    const maxVolts = 5;
     let percentage = ((voltage - minVolts) / (maxVolts - minVolts)) * 100;
     return Math.max(0, Math.min(100, percentage)).toFixed(1);
 }
