@@ -5,7 +5,7 @@
 
 function getFuelLevel(voltage) {
   const minVolts = 0; // Empty tank voltage (example)
-  const maxVolts = 10; // Full tank voltage (example)
+  const maxVolts = 5; // Full tank voltage (example)
   let percentage = ((voltage - minVolts) / (maxVolts - minVolts)) * 100;
   return Math.max(0, Math.min(100, percentage)).toFixed(1) + "%";
 }
