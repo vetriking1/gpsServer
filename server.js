@@ -95,11 +95,16 @@ async function getVehicleByIMEI(imei) {
 }
 
 // Fuel level calculation
-function getFuelLevel(voltage) {
-    const minVolts = 0;
-    const maxVolts = 5;
-    let percentage = ((voltage - minVolts) / (maxVolts - minVolts)) * 100;
-    return Math.max(0, Math.min(100, percentage)).toFixed(1);
+function getFuelLevel(currentVoltage) {
+  const maxVoltage = 5.0;
+  const minVoltage = 0.0;
+
+  if (currentVoltage >= maxVoltage) return 100;
+  if (currentVoltage <= minVoltage) return 0;
+
+  // Linear calculation: (Current / Max) * 100
+  const percentage = (currentVoltage / maxVoltage) * 100;
+  return percentage.toFixed(2);
 }
 
 // Broadcast to all WebSocket clients
@@ -177,7 +182,7 @@ async function processFuelData(data, imei, vehicle) {
     try {
         const rawValue = data.readUInt16BE(4);
         const voltage = rawValue / 100;
-        const fuelLevel = getFuelLevel(rawValue / 100);
+        const fuelLevel = getFuelLevel(voltage);
         const hex = data.toString('hex');
         
         await pool.query(
