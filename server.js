@@ -177,7 +177,7 @@ async function processFuelData(data, imei, vehicle) {
     try {
         const rawValue = data.readUInt16BE(4);
         const voltage = rawValue / 100;
-        const fuelLevel = getFuelLevel(rawValue / 1000);
+        const fuelLevel = getFuelLevel(rawValue / 100);
         const hex = data.toString('hex');
         
         await pool.query(
