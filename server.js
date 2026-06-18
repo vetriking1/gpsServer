@@ -400,6 +400,7 @@ const locationsRouter = require('./routes/locations');
 const fuelRouter = require('./routes/fuel');
 const geofencesRouter = require('./routes/geofences');
 const analyticsRouter = require('./routes/analytics');
+const expensesRouter = require('./routes/expenses');
 
 // Use routes with base path
 app.use(`${BASE_PATH}/api/vehicles`, vehiclesRouter);
@@ -407,6 +408,7 @@ app.use(`${BASE_PATH}/api/locations`, locationsRouter);
 app.use(`${BASE_PATH}/api/fuel`, fuelRouter);
 app.use(`${BASE_PATH}/api/geofences`, geofencesRouter);
 app.use(`${BASE_PATH}/api/analytics`, analyticsRouter);
+app.use(`${BASE_PATH}/api/expenses`, expensesRouter);
 
 // API: Health check
 app.get(`${BASE_PATH}/api/health`, (req, res) => {
