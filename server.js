@@ -184,15 +184,23 @@ async function processFuelData(data, imei, vehicle) {
         const voltage = rawValue / 100;
         const fuelLevel = getFuelLevel(voltage);
         const hex = data.toString('hex');
-        
+
         await pool.query(
             `INSERT INTO fuel_data (vehicle_id, imei, raw_value, voltage, fuel_level, raw_hex)
              VALUES ($1, $2, $3, $4, $5, $6)`,
             [vehicle.id, imei, rawValue, voltage, parseFloat(fuelLevel), hex]
         );
-        
+
+        // Skip 0V (no signal) and ~28V (sensor disconnect/error) readings for the live feed.
+        // The raw row is still stored above; read-side queries apply the same filter.
+        const validVoltage = voltage > 0 && voltage <= 5.5;
+        if (!validVoltage) {
+            log(`Fuel skipped (invalid voltage): Vehicle=${vehicle.vehicle_number}, Voltage=${voltage}V`, 'WARN');
+            return;
+        }
+
         log(`Fuel stored: Vehicle=${vehicle.vehicle_number}, Voltage=${voltage}V, Level=${fuelLevel}%`, 'DB');
-        
+
         broadcastToClients({
             type: 'fuel_update',
             data: {

@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
 
+// Valid fuel-sensor voltage range. Readings of 0V (no signal) and ~28V (sensor disconnect/error)
+// are skipped; the real measurement range is 0-5V (a little headroom for near-full noise).
+const VALID_VOLTAGE = 'voltage > 0 AND voltage <= 5.5';
+
 // Get live fuel levels for all vehicles
 router.get('/live', async (req, res) => {
     try {
@@ -20,7 +24,7 @@ router.get('/live', async (req, res) => {
             LEFT JOIN LATERAL (
                 SELECT fuel_level, voltage, raw_value, received_at
                 FROM fuel_data
-                WHERE vehicle_id = v.id
+                WHERE vehicle_id = v.id AND ${VALID_VOLTAGE}
                 ORDER BY received_at DESC
                 LIMIT 1
             ) f ON true
@@ -43,13 +47,13 @@ router.get('/history/:vehicleId', async (req, res) => {
         const { from, to, limit = 1000 } = req.query;
         
         let query = `
-            SELECT 
+            SELECT
                 fuel_level,
                 voltage,
                 raw_value,
                 received_at
             FROM fuel_data
-            WHERE vehicle_id = $1
+            WHERE vehicle_id = $1 AND ${VALID_VOLTAGE}
         `;
         const params = [vehicleId];
         
@@ -94,6 +98,7 @@ router.get('/consumption/:vehicleId', async (req, res) => {
             FROM fuel_data
             WHERE vehicle_id = $1
             AND received_at BETWEEN $2 AND $3
+            AND ${VALID_VOLTAGE}
         `, [vehicleId, from, to]);
         
         res.json(result.rows[0]);
