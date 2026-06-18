@@ -10,6 +10,13 @@ CREATE TABLE IF NOT EXISTS vehicles (
     driver_name VARCHAR(100),
     driver_phone VARCHAR(15),
     fuel_tank_capacity INTEGER, -- Fuel tank capacity in liters
+    wheels_count INTEGER,
+    emi_per_month NUMERIC(12,2),
+    emi_end_date DATE,
+    insurance_due_date DATE,
+    insurance_amount NUMERIC(12,2),
+    road_tax_due_date DATE,
+    road_tax_amount NUMERIC(12,2),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -221,8 +228,32 @@ $$ LANGUAGE plpgsql;
 
 -- Sample data insert for testing
 -- Register your device
-INSERT INTO vehicles (imei, vehicle_number, vehicle_type, fuel_tank_capacity) 
-VALUES ('0352672100341866', 'TN 12 BK 6023', 'Truck', 200);
+INSERT INTO vehicles (
+    imei,
+    vehicle_number,
+    vehicle_type,
+    fuel_tank_capacity,
+    wheels_count,
+    emi_per_month,
+    emi_end_date,
+    insurance_due_date,
+    insurance_amount,
+    road_tax_due_date,
+    road_tax_amount
+) 
+VALUES (
+    '0352672100341866',
+    'TN 12 BK 6023',
+    'Truck',
+    200,
+    6,
+    25000.00,
+    CURRENT_DATE + INTERVAL '12 months',
+    CURRENT_DATE + INTERVAL '6 months',
+    18000.00,
+    CURRENT_DATE + INTERVAL '9 months',
+    12000.00
+);
 
 -- Grant permissions to gps_user
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO gps_user;
