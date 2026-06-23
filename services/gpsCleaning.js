@@ -88,7 +88,12 @@ async function cleanGpsRoute(route) {
     }));
   }
 
-  const roadIndex = await getRoadIndexForRoute(repaired);
+  let roadIndex = null;
+  try {
+    roadIndex = await getRoadIndexForRoute(repaired);
+  } catch (err) {
+    console.warn('road index skipped:', err.message);
+  }
   if (roadIndex && repaired.length >= 2) {
     repaired = repaired.map((p) => {
       const q = clonePoint(p);

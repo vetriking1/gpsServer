@@ -31,6 +31,8 @@ function ensureCacheDir() {
   }
 }
 
+const OVERPASS_TIMEOUT_MS = Number(process.env.GPS_OVERPASS_TIMEOUT_MS || 6000);
+
 async function overpassQuery(query) {
   for (const url of OVERPASS_MIRRORS) {
     try {
@@ -38,7 +40,7 @@ async function overpassQuery(query) {
         method: 'POST',
         headers: OVERPASS_HEADERS,
         body: query,
-        signal: AbortSignal.timeout(90000),
+        signal: AbortSignal.timeout(OVERPASS_TIMEOUT_MS),
       });
       const text = await res.text();
       if (res.ok && text.trim().startsWith('{')) {
@@ -168,12 +170,24 @@ async function loadRoadIndex(bbox) {
   return index;
 }
 
+const ROAD_SNAP_TIMEOUT_MS = Number(process.env.GPS_ROAD_SNAP_TIMEOUT_MS || 6000);
+/** Road snap is opt-in (Overpass can be slow). Set GPS_ROAD_SNAP=1 on the server to enable. */
+const ROAD_SNAP_ENABLED = process.env.GPS_ROAD_SNAP === '1';
+
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((resolve) => setTimeout(() => resolve(null), ms)),
+  ]);
+}
+
 /** Build (or load) a road index covering the given route points. */
 async function getRoadIndexForRoute(points) {
+  if (!ROAD_SNAP_ENABLED) return null;
   const { bboxOfPoints } = require('./geoUtils');
   const bbox = bboxOfPoints(points);
   if (!bbox) return null;
-  return loadRoadIndex(bbox);
+  return withTimeout(loadRoadIndex(bbox), ROAD_SNAP_TIMEOUT_MS);
 }
 
 module.exports = {
