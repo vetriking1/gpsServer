@@ -15,7 +15,7 @@
  */
 
 const { parseTimeSec, haversineM, median, STATIONARY_MAX_KMH } = require('./geoUtils');
-const { matchPoints } = require('./mapMatch');
+const { matchGeometry } = require('./mapMatch');
 
 const GPS_MAX_SPEED_KMH = 120;
 const GPS_MIN_SAT = 4;
@@ -31,6 +31,40 @@ function isValidFix(p) {
   const sats = p.satellites;
   if (sats != null && Number(sats) < GPS_MIN_SAT) return false;
   return true;
+}
+
+/**
+ * Turn matched road geometry into route points carrying the run's time span + average speed.
+ * Timestamps are spread by cumulative DISTANCE (constant-speed assumption) so the implied speed
+ * between geometry vertices stays sane and downstream filters don't reject the dense path.
+ */
+function geometryToPoints(geom, runPts) {
+  const t0 = parseTimeSec(runPts[0]) * 1000;
+  const t1 = parseTimeSec(runPts[runPts.length - 1]) * 1000;
+  const span = Math.max(1, t1 - t0);
+  const speeds = runPts.map((p) => Number(p.speed) || 0).filter((s) => s > 0);
+  const avgSpeed = speeds.length ? Math.round(speeds.reduce((a, b) => a + b, 0) / speeds.length) : 0;
+  const base = runPts[0];
+
+  const cum = [0];
+  for (let k = 1; k < geom.length; k++) {
+    cum.push(cum[k - 1] + haversineM(geom[k - 1][0], geom[k - 1][1], geom[k][0], geom[k][1]));
+  }
+  const total = cum[cum.length - 1] || 1;
+
+  return geom.map((g, k) => {
+    const iso = new Date(t0 + (cum[k] / total) * span).toISOString();
+    return {
+      ...base,
+      latitude: g[0],
+      longitude: g[1],
+      speed: avgSpeed,
+      course: null,
+      satellites: null,
+      timestamp: iso,
+      received_at: iso,
+    };
+  });
 }
 
 function rejectOutliers(pts) {
@@ -87,10 +121,15 @@ async function cleanGpsRoute(route) {
       const cLon = median(run.pts.map((p) => Number(p.longitude)));
       for (const p of run.pts) out.push({ ...p, latitude: cLat, longitude: cLon });
     } else {
-      // map-match the moving run onto roads
+      // map-match the moving run onto the road network — use the matched ROAD GEOMETRY so the path
+      // follows roads even between sparsely-logged points (not straight chords).
       // eslint-disable-next-line no-await-in-loop
-      const snapped = await matchPoints(run.pts);
-      run.pts.forEach((p, i) => out.push({ ...p, latitude: snapped[i][0], longitude: snapped[i][1] }));
+      const geom = await matchGeometry(run.pts);
+      if (geom && geom.length >= 2) {
+        out.push(...geometryToPoints(geom, run.pts));
+      } else {
+        for (const p of run.pts) out.push({ ...p }); // matching failed → keep raw run
+      }
     }
   }
   return out;
