@@ -3,6 +3,16 @@ const { cleanGpsRoute } = require('../services/gpsCleaning');
 
 const router = express.Router();
 
+// TTL cache for cleaned (map-matched) routes — map-matching is the expensive part.
+const cleanCache = new Map(); // key -> { at, data }
+const CLEAN_TTL_MS = 10 * 60 * 1000;
+function cleanCacheGet(key) {
+    const e = cleanCache.get(key);
+    if (e && Date.now() - e.at < CLEAN_TTL_MS) return e.data;
+    if (e) cleanCache.delete(key);
+    return null;
+}
+
 // Get live locations (from cache)
 router.get('/live', (req, res) => {
     const { liveLocations } = req.app.locals;
@@ -139,8 +149,18 @@ router.get('/route/:vehicleId', async (req, res) => {
         `, [vehicleId, from, to]);
 
         const raw = result.rows;
-        const cleaned =
-            req.query.raw === 'true' ? raw : await cleanGpsRoute(raw);
+        if (req.query.raw === 'true') {
+            return res.json(raw);
+        }
+
+        // Cache cleaned (map-matched) results so repeated day views don't re-hit Valhalla.
+        const cacheKey = `${vehicleId}|${from}|${to}`;
+        const hit = cleanCacheGet(cacheKey);
+        if (hit) {
+            return res.json(hit);
+        }
+        const cleaned = await cleanGpsRoute(raw);
+        cleanCache.set(cacheKey, { at: Date.now(), data: cleaned });
         res.json(cleaned);
     } catch (err) {
         console.error('Error fetching route:', err);
