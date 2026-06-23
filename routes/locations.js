@@ -1,4 +1,6 @@
 const express = require('express');
+const { cleanGpsRoute } = require('../services/gpsCleaning');
+
 const router = express.Router();
 
 // Get live locations (from cache)
@@ -135,8 +137,11 @@ router.get('/route/:vehicleId', async (req, res) => {
             AND received_at BETWEEN $2 AND $3
             ORDER BY received_at ASC
         `, [vehicleId, from, to]);
-        
-        res.json(result.rows);
+
+        const raw = result.rows;
+        const cleaned =
+            req.query.raw === 'true' ? raw : await cleanGpsRoute(raw);
+        res.json(cleaned);
     } catch (err) {
         console.error('Error fetching route:', err);
         res.status(500).json({ error: err.message });
