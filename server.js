@@ -116,6 +116,18 @@ function broadcastToClients(message) {
     });
 }
 
+function buildAckResponse(protocol, serialNo) {
+    const payload = Buffer.concat([Buffer.from([0x05, protocol]), serialNo]);
+    const crc = getCRC(payload);
+
+    return Buffer.concat([
+        Buffer.from([0x78, 0x78]),
+        payload,
+        crc,
+        Buffer.from([0x0D, 0x0A])
+    ]);
+}
+
 // Process location data (0x12)
 async function processLocationData(data, imei, vehicle) {
     try {
@@ -313,37 +325,28 @@ const gpsServer = net.createServer((socket) => {
                     
                     if (clientVehicle) {
                         log(`LOGIN: IMEI=${clientIMEI}, Vehicle=${clientVehicle.vehicle_number}`, 'LOGIN');
-                        await logConnection('LOGIN', clientIMEI, clientVehicle.id, 'Device connected');
                     }
                 }
                 
-                const payload = Buffer.concat([Buffer.from([0x05, protocol]), serialNo]);
-                const crc = getCRC(payload);
-                const response = Buffer.concat([
-                    Buffer.from([0x78, 0x78]),
-                    payload,
-                    crc,
-                    Buffer.from([0x0D, 0x0A])
-                ]);
+                const response = buildAckResponse(protocol, serialNo);
                 socket.write(response);
                 log(`LOGIN response sent to IMEI: ${clientIMEI}`, 'RESPONSE');
+
+                if (clientIMEI && clientVehicle) {
+                    void logConnection('LOGIN', clientIMEI, clientVehicle.id, 'Device connected')
+                        .catch(err => log(`Error logging login: ${err.message}`, 'ERROR'));
+                }
             }
             else if (protocol === 0x13) {
                 log(`HEARTBEAT from IMEI: ${clientIMEI || 'Unknown'}`, 'HEARTBEAT');
                 
-                if (clientIMEI && clientVehicle) {
-                    await logConnection('HEARTBEAT', clientIMEI, clientVehicle.id, 'Heartbeat received');
-                }
-                
-                const payload = Buffer.concat([Buffer.from([0x05, protocol]), serialNo]);
-                const crc = getCRC(payload);
-                const response = Buffer.concat([
-                    Buffer.from([0x78, 0x78]),
-                    payload,
-                    crc,
-                    Buffer.from([0x0D, 0x0A])
-                ]);
+                const response = buildAckResponse(protocol, serialNo);
                 socket.write(response);
+
+                if (clientIMEI && clientVehicle) {
+                    void logConnection('HEARTBEAT', clientIMEI, clientVehicle.id, 'Heartbeat received')
+                        .catch(err => log(`Error logging heartbeat: ${err.message}`, 'ERROR'));
+                }
             }
             else if (protocol === 0x12) {
                 if (clientIMEI && clientVehicle) {

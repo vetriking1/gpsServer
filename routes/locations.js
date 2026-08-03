@@ -3,9 +3,10 @@ const { cleanGpsRoute } = require('../services/gpsCleaning');
 
 const router = express.Router();
 
-// TTL cache for cleaned (map-matched) routes — map-matching is the expensive part.
+// TTL cache for cleaned (map-matched) routes — map-matching is the expensive part. Historical days
+// don't change, so cache for a few hours; the in-memory map is cheap (a few arrays per vehicle-day).
 const cleanCache = new Map(); // key -> { at, data }
-const CLEAN_TTL_MS = 10 * 60 * 1000;
+const CLEAN_TTL_MS = 6 * 60 * 60 * 1000;
 function cleanCacheGet(key) {
     const e = cleanCache.get(key);
     if (e && Date.now() - e.at < CLEAN_TTL_MS) return e.data;

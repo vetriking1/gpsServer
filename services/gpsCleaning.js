@@ -113,6 +113,18 @@ async function cleanGpsRoute(route) {
   }
   runs.push({ moving: curMoving, pts: cur });
 
+  // Map-match all moving runs CONCURRENTLY (capped) instead of one-at-a-time — the per-run Valhalla
+  // calls are network-bound, so this turns ~sum(latency) into ~max(latency) per batch.
+  const CONCURRENCY = 6;
+  const movingRuns = runs.filter((r) => r.moving);
+  const geomByRun = new Map();
+  for (let s = 0; s < movingRuns.length; s += CONCURRENCY) {
+    const batch = movingRuns.slice(s, s + CONCURRENCY);
+    // eslint-disable-next-line no-await-in-loop
+    const results = await Promise.all(batch.map((r) => matchGeometry(r.pts)));
+    batch.forEach((r, idx) => geomByRun.set(r, results[idx]));
+  }
+
   const out = [];
   for (const run of runs) {
     if (!run.moving) {
@@ -121,10 +133,8 @@ async function cleanGpsRoute(route) {
       const cLon = median(run.pts.map((p) => Number(p.longitude)));
       for (const p of run.pts) out.push({ ...p, latitude: cLat, longitude: cLon });
     } else {
-      // map-match the moving run onto the road network — use the matched ROAD GEOMETRY so the path
-      // follows roads even between sparsely-logged points (not straight chords).
-      // eslint-disable-next-line no-await-in-loop
-      const geom = await matchGeometry(run.pts);
+      // matched ROAD GEOMETRY so the path follows roads even between sparsely-logged points
+      const geom = geomByRun.get(run);
       if (geom && geom.length >= 2) {
         out.push(...geometryToPoints(geom, run.pts));
       } else {
